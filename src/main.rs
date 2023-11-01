@@ -1,3 +1,5 @@
+mod primagen;
+
 fn main() {
-    println!("Hello, world!");
+    primagen::tst();
 }
