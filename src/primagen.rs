@@ -54,9 +54,9 @@ pub fn tst() {
 }
 
 fn is_prime(n: u128) -> bool {
-    if n == 2 || n == 3 {
-        return true;
-    }
+    //if n == 2 || n == 3 {
+        //return true; optimisation?
+    //}
 
     if n <= 1 || n % 2 == 0 || n % 3 == 0 {
         return false;
