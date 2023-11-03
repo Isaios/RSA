@@ -2,8 +2,8 @@ use std::u128;
 use std::time::Instant;
 
 use num_bigint::{BigUint, ToBigUint, RandBigInt};
-use num_traits::{One, Zero};
-
+use num_traits::{One, Zero, pow};
+use rand::Rng;
 pub fn tst() {
 /*     let num: u128 = 100000;
 
@@ -37,7 +37,7 @@ pub fn tst() {
 
     let mut rng = rand::thread_rng();
     let size: u64 = 52;
-
+    
 
     let start = Instant::now();
 
@@ -52,6 +52,38 @@ pub fn tst() {
 
     println!("prime detection of generated numbers: {:?}", duration);
 }
+
+pub fn rmt(n: u128, k: u128) -> bool {
+    let mut d = n - 1;
+
+    let mut s:u128 = 0;
+    while d % 2 == 0 {
+        d /= 2;
+        s +=1;
+    }
+
+    println!("d: {d}, s: {s}");
+    for _ in 0..k {
+
+        let a = rand::thread_rng().gen_range(2..= n - 2);
+        let mut  x = pow(a, d.try_into().unwrap()) % n;
+
+        for _ in 0..s {
+
+        let mut y = pow(x, x.try_into().unwrap()) % n;
+
+        if y == 1 && x != n-1 && x != 1  {
+            return false
+        }
+        x = y;
+        if y != 1 {
+            return false
+        } 
+        }
+    }
+   true
+} 
+
 
 fn is_prime(n: u128) -> bool {
     //if n == 2 || n == 3 {
@@ -118,3 +150,4 @@ fn prime1(n: BigUint, zero: BigUint, one: BigUint, two: BigUint, three: BigUint,
 
     return true;
 }
+
