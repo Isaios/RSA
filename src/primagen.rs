@@ -71,7 +71,7 @@ pub fn rmt(n: u128, k: u128) -> bool {
 
         for _ in 0..s {
 
-            let mut y = pow(x, x.try_into().unwrap()) % n;
+            let mut y = pow(x, 2) % n;
 
             if y == 1 && x != n-1 && x != 1  {
                 return false
