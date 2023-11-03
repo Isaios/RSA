@@ -66,22 +66,25 @@ pub fn rmt(n: u128, k: u128) -> bool {
     for _ in 0..k {
 
         let a = rand::thread_rng().gen_range(2..= n - 2);
-        let mut  x = pow(a, d.try_into().unwrap()) % n;
+        let mut x = pow(a, d.try_into().unwrap()) % n;
+        let mut y = 0;
 
         for _ in 0..s {
 
-        let mut y = pow(x, x.try_into().unwrap()) % n;
+            let mut y = pow(x, x.try_into().unwrap()) % n;
 
-        if y == 1 && x != n-1 && x != 1  {
-            return false
+            if y == 1 && x != n-1 && x != 1  {
+                return false
+            }
+            x = y;
+
         }
-        x = y;
         if y != 1 {
             return false
+
         } 
-        }
     }
-   true
+    true
 } 
 
 
