@@ -70,7 +70,7 @@ pub fn rmt(n: u128, k: u128) -> bool {
         let mut y = 0;
         for _ in 0..s {
 
-            y = pow(x, 2) % n;
+            y = x * x % n;
 
             if y == 1 && x != n-1 && x != 1  {
                 return false
