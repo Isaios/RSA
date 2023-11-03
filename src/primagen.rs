@@ -1,25 +1,10 @@
 use std::u128;
 use std::time::Instant;
 
-use num_bigint::{BigUint, ToBigUint, RandBigInt};
+use num_bigint::{BigUint, ToBigUint, RandBigInt, BigInt, ToBigInt};
 use num_traits::{One, Zero, pow};
 use rand::Rng;
 pub fn tst() {
-/*     let num: u128 = 100000;
-
-    let start = Instant::now();
-    for n in 1..num {
-        is_prime(n);
-    }
-    let duration = start.elapsed();
-    println!("standart prime detection{:?}", duration); */
-
-    /* let start = Instant::now();
-    for n in 1..num {
-        prime(n.to_biguint().unwrap());
-    }
-    let duration = start.elapsed();
-    println!("\n{:?}", duration); */
 
     let zero: BigUint = Zero::zero();
     let one: BigUint = One::one();
@@ -27,13 +12,6 @@ pub fn tst() {
     let three: BigUint = 3.to_biguint().unwrap();
     let five: BigUint = 5.to_biguint().unwrap();
     let six: BigUint = 6.to_biguint().unwrap();
-
-    /* let start = Instant::now();
-    for n in 1..num {
-        prime1(n.to_biguint().unwrap(), zero.clone(), one.clone(), two.clone(), three.clone(), five.clone(), six.clone());
-    }
-    let duration = start.elapsed();
-    println!("optimized prime BigUint detection: {:?}", duration); */
 
     let mut rng = rand::thread_rng();
     let size: u64 = 52;
@@ -54,38 +32,79 @@ pub fn tst() {
 }
 
 pub fn rmt(n: u128, k: u128) -> bool {
+    let mut rng = rand::thread_rng();
+
     let mut d = n - 1;
-
-    let mut s:u128 = 0;
-    while d % 2 == 0 {
-        d /= 2;
-        s +=1;
+    let mut s: u32 = 0;
+    while d & 1 == 0 {
+        d >>= 1;
+        s += 1;
     }
-
-    println!("d: {d}, s: {s}");
+    
     for _ in 0..k {
-
-        let a = rand::thread_rng().gen_range(2..= n - 2);
-        let mut x = pow(a, d.try_into().unwrap()) % n;
+        let a: u128 = rng.gen_range(1..n-1);
+        let mut x = u128pow(a, d) % n;
         let mut y = 0;
         for _ in 0..s {
-
-            y = pow(x, 2) % n;
-
-            if y == 1 && x != n-1 && x != 1  {
-                return false
+            y = (x*x) % n;
+            if y == 1 && x != 1 && x != n-1 {
+                return false;
             }
             x = y;
-
         }
         if y != 1 {
-            return false
+            return false;
+        }
+    }
 
-        } 
+    true
+}
+fn u128pow(b: u128, e: u128) -> u128 {
+    let mut res = b;
+    for _ in 1..e {
+        res *= b;
+    }
+    res
+}
+
+pub fn decompose(n: &BigUint) -> (BigUint, BigUint) {
+    let zero: BigUint = Zero::zero();
+    let one: BigUint = One::one();
+    let ref two = 2.to_biguint().unwrap();
+    let mut d: BigUint = (n - 1u8).clone();
+    let mut s: BigUint = Zero::zero();
+    
+    while &d % two == zero {
+        d /= two;
+        s += 1u8;
+    }
+
+    (d, s)
+}
+
+// n a d s
+pub fn rmt_big_uint(n: &BigUint, a: &BigUint, d: &BigUint, s: &BigUint) -> bool {
+    let n_minus_one: BigUint = n - 1u8;
+    let mut x = a.modpow(d, n);
+    let mut y = Zero::zero();
+    let mut i: BigUint = One::one();
+    let ref two: BigUint = 2.to_biguint().unwrap();
+    
+    while &i < s {
+        y = x.modpow(two, n);
+
+        if y == One::one() && x != One::one() && x != n_minus_one {
+            return false;
+        }
+
+        x = y.clone();
+        i += 1u8;
+    }
+    if y != One::one() {
+        return false;
     }
     true
-} 
-
+}
 
 fn is_prime(n: u128) -> bool {
     //if n == 2 || n == 3 {
