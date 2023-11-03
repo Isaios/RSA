@@ -68,10 +68,9 @@ pub fn rmt(n: u128, k: u128) -> bool {
         let a = rand::thread_rng().gen_range(2..= n - 2);
         let mut x = pow(a, d.try_into().unwrap()) % n;
         let mut y = 0;
-
         for _ in 0..s {
 
-            let mut y = pow(x, 2) % n;
+            y = pow(x, 2) % n;
 
             if y == 1 && x != n-1 && x != 1  {
                 return false
@@ -110,7 +109,7 @@ fn is_prime(n: u128) -> bool {
     true
 }
 
-fn prime(n: BigUint) -> bool {
+pub fn prime(n: BigUint) -> bool {
     if n == 2.to_biguint().unwrap() || n == 3.to_biguint().unwrap() {
         return true;
     }
