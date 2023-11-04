@@ -1,6 +1,5 @@
 use std::u128;
 use std::time::Instant;
-//test
 use num_bigint::{BigUint, ToBigUint, RandBigInt};
 use num_traits::{One, Zero, pow};
 use rand::Rng;
