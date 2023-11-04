@@ -1,7 +1,11 @@
-use std::u128;
-use num_bigint::{BigUint, ToBigUint, RandBigInt};
-use num_traits::{One, Zero, pow};
+use bus;
+use num_bigint::{BigUint, RandBigInt, ToBigUint};
+use num_cpus;
+use num_traits::{One, Zero};
 use rand::Rng;
+use std::sync::mpsc;
+use std::thread;
+use std::u128;
 
 pub fn rmt(n: u128, k: u128) -> bool {
     let mut rng = rand::thread_rng();
@@ -12,14 +16,14 @@ pub fn rmt(n: u128, k: u128) -> bool {
         d >>= 1;
         s += 1;
     }
-    
+
     for _ in 0..k {
-        let a: u128 = rng.gen_range(1..n-1);
+        let a: u128 = rng.gen_range(1..n - 1);
         let mut x = u128pow(a, d) % n;
         let mut y = 0;
         for _ in 0..s {
-            y = (x*x) % n;
-            if y == 1 && x != 1 && x != n-1 {
+            y = (x * x) % n;
+            if y == 1 && x != 1 && x != n - 1 {
                 return false;
             }
             x = y;
@@ -68,9 +72,8 @@ pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
 
         let mut i: BigUint = zero.clone();
         while &i < &s {
-
             y = x.modpow(&two, n);
-            if y == One::one() && x != One::one() && x != n_minus_one{
+            if y == One::one() && x != One::one() && x != n_minus_one {
                 return false;
             }
             x = y.clone();
@@ -81,4 +84,78 @@ pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
         }
     }
     true
+}
+
+/// Function to generate prime numbers using the miller-rabin probalistic primality test
+/// IMPORTANT: large size values needed for encryption will greatly increase time needed for 
+/// computation; release mode, as well as a reasonably powerfull cpu is neccessary
+///
+/// # Arguments
+///
+/// * `size` - usize indicating the bit size of the primes
+/// * `k` - usize indicating the number of checks performed by the miller-rabin test
+/// * `count` - usize indicating the number of primes to be generated
+///
+/// # Examples
+///
+/// ```
+/// // generating a vector with 3 primes with the bit length of 1000 using 500 checks per prime
+/// let primes: Vec<BigUint> = generate(1000, 500, 3);
+/// ```
+pub fn generate(size: usize, k: usize, count: usize) -> Vec<BigUint> {
+    // create a bus for handling the cancellation of all threads, a channel for transmition of the
+    // primes to the main thread and a thread array holding all handles
+    let mut bus: bus::Bus<bool> = bus::Bus::new(1);
+    let (sender, receiver): (mpsc::Sender<BigUint>, mpsc::Receiver<BigUint>) = mpsc::channel();
+    let mut threads = vec![];
+
+    let mut primes: Vec<BigUint> = vec![];
+    let mut prime_counter = 0;
+
+    // create as many threads as there are cpu threads
+    for _ in 0..num_cpus::get() {
+        let mut bus_rx: bus::BusReader<bool> = bus.add_rx();
+        let tx: mpsc::Sender<BigUint> = sender.clone();
+        // spawn the thread and move variables into it
+        let thread = thread::spawn(move || {
+            let mut rng = rand::thread_rng();
+            let mut n: BigUint;
+            // while no signal was received via the bus, proceed to generate and test numbers
+            while !match bus_rx.try_recv() {
+                Ok(r) => r,
+                _ => false,
+            } {
+                n = rng.gen_biguint(size.clone().try_into().unwrap());
+                // is number is prime, send it over the std::sync::mpsc channel
+                if rmt_big_uint(&n, k) {
+                    tx.send(n).unwrap();
+                }
+            }
+        });
+        // collect all of the threads in the vector to join them later
+        threads.push(thread);
+    }
+
+    // try receiving the primes from the threads finishing generating
+    loop {
+        match receiver.try_recv() {
+            Ok(prime) => {
+                primes.push(prime);
+                prime_counter += 1
+            }
+            _ => (),
+        }
+        // as soon as the desired amount of primes has been received broadcast the cancellation signal and quit the loop
+        if prime_counter == count {
+            bus.broadcast(true);
+            break;
+        }
+    }
+
+    // wait for all threads to finish
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    primes
 }
