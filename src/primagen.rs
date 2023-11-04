@@ -88,7 +88,7 @@ pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
 
 /// Function to generate prime numbers using the miller-rabin probalistic primality test
 /// IMPORTANT: large size values needed for encryption will greatly increase time needed for 
-/// computation; release mode, as well as a reasonably powerfull cpu is neccessary
+/// computation; release mode, as well as a reasonably powerful cpu are neccessary
 ///
 /// # Arguments
 ///
