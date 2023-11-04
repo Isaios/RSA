@@ -1,6 +1,7 @@
 use std::u128;
 use std::time::Instant;
 use num_bigint::{BigUint, ToBigUint, RandBigInt};
+//lol
 use num_traits::{One, Zero, pow};
 use rand::Rng;
 pub fn tst() {
