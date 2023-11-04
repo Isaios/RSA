@@ -59,7 +59,7 @@ pub fn rmt(n: u128, k: u128) -> bool {
 
     true
 }
-fn u128pow(b: u128, e: u128) -> u128 {
+pub fn u128pow(b: u128, e: u128) -> u128 {
     let mut res = b;
     for _ in 1..e {
         res *= b;
