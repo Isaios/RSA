@@ -92,7 +92,7 @@ pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
 ///
 /// # Arguments
 ///
-/// * `size` - usize indicating the bit size of the primes
+/// * `size` - usize indicating the bit size of the primes. Has to be at least 3
 /// * `k` - usize indicating the number of checks performed by the miller-rabin test
 /// * `count` - usize indicating the number of primes to be generated
 ///
