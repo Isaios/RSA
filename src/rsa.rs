@@ -4,26 +4,16 @@ use crate::primagen::*;
 use num_bigint::{BigInt, ToBigInt, ToBigUint, BigUint};
 use num_traits::{One, Zero};
 
-// p & q are prime integers 
-// e is coprime with phi(n) and can also be prime, since every prime is coprime with any number.(generating coprimes specifically can be faster, but is a hustle)
-// returns public key n, input e is the other  public key, d is the private key 
-pub fn rsa_make_keys(p:u128, q:u128, e:u128) -> (u128, u128){ 
-    let d = (1 - (p - 1) * (q - 1)) / e; // maybe needs float?
-    let n = p*q;
-    (d, n)
-}
-
-// z = single u128 to encrypt
-pub fn rsa_encrypt(e:u128, n: u128, z: u128) -> u128 {
-    return u128pow(z, e) % n;
-
+// c = single u128 to encrypt
+pub fn rsa_encrypt(c: &BigUint , d: &BigUint, n: &BigUint) -> BigUint {
+    c.modpow(&d.to_biguint().unwrap(), n)
 }
 //c = single u128 to decrypt
-pub fn rsa_decrypt(c:u128, d: u128, n: u128) -> u128 {
-    return u128pow(c, d) % n;
+pub fn rsa_decrypt(c: &BigUint, d: &BigUint, n: &BigUint) -> BigUint {
+    c.modpow(d, n)
 }
 
-pub fn generate_keys() -> (BigUint, BigUint, BigInt) {
+pub fn generate_keys() -> (BigUint, BigUint, BigUint) {
     let one: BigUint = One::one();
 
     let start = std::time::Instant::now();
@@ -46,7 +36,7 @@ pub fn generate_keys() -> (BigUint, BigUint, BigInt) {
            e += &one; 
         } 
     }
-    (e, n, d)
+    (e, n, d.to_biguint().unwrap())
 
 }
 
