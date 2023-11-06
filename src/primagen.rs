@@ -2,49 +2,10 @@ use bus;
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
 use num_cpus;
 use num_traits::{One, Zero};
-use rand::Rng;
 use std::sync::mpsc;
 use std::thread;
-use std::u128;
 
-pub fn rmt(n: u128, k: u128) -> bool {
-    let mut rng = rand::thread_rng();
-
-    let mut d = n - 1;
-    let mut s: u32 = 0;
-    while d & 1 == 0 {
-        d >>= 1;
-        s += 1;
-    }
-
-    for _ in 0..k {
-        let a: u128 = rng.gen_range(1..n - 1);
-        let mut x = u128pow(a, d) % n;
-        let mut y = 0;
-        for _ in 0..s {
-            y = (x * x) % n;
-            if y == 1 && x != 1 && x != n - 1 {
-                return false;
-            }
-            x = y;
-        }
-        if y != 1 {
-            return false;
-        }
-    }
-
-    true
-}
-
-pub fn u128pow(b: u128, e: u128) -> u128 {
-    let mut res = b;
-    for _ in 1..e {
-        res *= b;
-    }
-    res
-}
-
-pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
+pub fn rmt(n: &BigUint, k: usize) -> bool {
     let mut rng = rand::thread_rng();
 
     let n_minus_one: BigUint = n - 1u8;
@@ -102,7 +63,7 @@ pub fn rmt_big_uint(n: &BigUint, k: usize) -> bool {
 /// // generating a vector with 3 primes with the bit length of 1000 using 500 checks per prime
 /// let primes: Vec<BigUint> = generate(1000, 500, 3);
 /// ```
-pub fn generate(size: usize, k: usize, count: usize) -> Vec<BigUint> {
+pub fn generate_primes(size: usize, k: usize) -> (BigUint, BigUint) {
     // create a bus for handling the cancellation of all threads, a channel for transmition of the
     // primes to the main thread and a thread array holding all handles
     let mut bus: bus::Bus<bool> = bus::Bus::new(1);
@@ -111,6 +72,7 @@ pub fn generate(size: usize, k: usize, count: usize) -> Vec<BigUint> {
 
     let mut primes: Vec<BigUint> = vec![];
     let mut prime_counter = 0;
+    let count = 2;
 
     // create as many threads as there are cpu threads
     for _ in 0..num_cpus::get() {
@@ -127,7 +89,7 @@ pub fn generate(size: usize, k: usize, count: usize) -> Vec<BigUint> {
             } {
                 n = rng.gen_biguint(size.clone().try_into().unwrap());
                 // is number is prime, send it over the std::sync::mpsc channel
-                if rmt_big_uint(&n, k) {
+                if rmt(&n, k) {
                     tx.send(n).unwrap();
                 }
             }
@@ -157,5 +119,5 @@ pub fn generate(size: usize, k: usize, count: usize) -> Vec<BigUint> {
         thread.join().unwrap();
     }
 
-    primes
+    (primes[0].clone(), primes[1].clone())
 }
