@@ -2,7 +2,7 @@
 
 use crate::primagen::*;
 use num_bigint::{BigInt, ToBigInt, ToBigUint, BigUint};
-use num_traits::*;
+use num_traits::{One, Zero};
 
 // p & q are prime integers 
 // e is coprime with phi(n) and can also be prime, since every prime is coprime with any number.(generating coprimes specifically can be faster, but is a hustle)
@@ -23,16 +23,6 @@ pub fn rsa_decrypt(c:u128, d: u128, n: u128) -> u128 {
     return u128pow(c, d) % n;
 }
 
-pub struct PublicPair {
-    pub e: BigUint,
-    pub n: BigUint,
-}
-
-pub struct KeyPair {
-    pub public: PublicPair,
-    pub private: BigUint,
-}
-
 pub fn generate_keys() -> (BigUint, BigUint, BigInt) {
     let one: BigUint = One::one();
 
@@ -42,16 +32,22 @@ pub fn generate_keys() -> (BigUint, BigUint, BigInt) {
     let q = primes[1].clone();
     println!("generated primes in: {:?}", start.elapsed());
 
-    let e = 65537.to_biguint().unwrap();
-
+    
     let n = &p * &q;
     let phi_n = (p-&one) * (q-&one);
-
-    let mut d: BigInt = Default::default();
+    let mut d: BigInt = Zero::zero();
     let mut k: BigInt = Default::default();
-    let gcd: BigInt = gcd_extended_iterative(e.clone().into(), phi_n.into(), &mut d, &mut k);
-
+    let mut e = 65537.to_biguint().unwrap(); 
+    while d <= Zero::zero() {
+        
+        if gcd_extended_iterative(e.clone().into(), phi_n.clone().into(), &mut d, &mut k) == 1u8.into() && &d >= &1u8.into() {break;}
+        e += &one; 
+        while !rmt_big_uint(&e, 500) {
+           e += &one; 
+        } 
+    }
     (e, n, d)
+
 }
 
 pub fn gcd_extended_iterative(mut a: BigInt, mut b: BigInt, s: &mut BigInt, t: &mut BigInt) -> BigInt {
