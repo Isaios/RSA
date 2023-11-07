@@ -31,8 +31,8 @@ fn main(){
 
     {
         let mut file = File::create("test").unwrap();
-        let buf: [u8; 13] = [101, 
-                            110,
+        let buf: [u8; 13] = [110, 
+                            100,
                             2, 0, 0, 0, 
                             1, 0, 0, 0, 
                             1, 1,
@@ -46,17 +46,7 @@ fn main(){
 
 }
 
-enum ReadBuf {
-    Encrypt {
-        e: BigUint,
-        n: BigUint,
-    },
-    Decrypt {
-        n: BigUint,
-        d: BigUint,
-    },
-    Bin,
-}
+
 
 enum FileSignature {
     Encrypt,
@@ -86,38 +76,68 @@ fn read_bufsig(path: std::path::PathBuf) -> Result<FileSignature, Box<dyn std::e
     }
 }
 
+enum ReadBuf {
+    Encrypt {
+        e: BigUint,
+        n: BigUint,
+    },
+    Decrypt {
+        n: BigUint,
+        d: BigUint,
+    },
+    Bin {
+        buf: BigUint,
+    },
+}
+
 fn read_buf(path: std::path::PathBuf) -> Result<ReadBuf, Box<dyn std::error::Error>> {
     let sig: FileSignature = read_bufsig(path.clone()).unwrap();
     let ref mut file = File::open(path)?;
+    match sig {
+        FileSignature::Encrypt => {
+            println!("encryption mode");
+            let (e, n) = read_keys(file)?;
+
+            println!("read e: {:?}", e);
+            println!("read n: {:?}", n);
+
+            return Ok(ReadBuf::Encrypt { e, n });
+        },
+        FileSignature::Decrypt => {
+            println!("decryption mode");
+            let (n, d) = read_keys(file)?;
+
+            println!("read n: {:?}", n);
+            println!("read d: {:?}", d);
+
+            return Ok(ReadBuf::Decrypt { n, d });
+        },
+        FileSignature::Bin => {
+            let mut buffer: Vec<u8> = vec![];
+            file.read_to_end(&mut buffer)?;
+            let buf: BigUint = BigUint::from_bytes_le(&buffer);
+            return Ok(ReadBuf::Bin { buf });
+        }
+    }
+}
+
+fn read_keys(file: &mut std::fs::File) -> Result<(BigUint, BigUint), Box<dyn std::error::Error>> {
     // read in 8 bytes to fill two u32 values containing the sizes
     let mut size_buf1: [u8; 4]= Default::default();
     let mut size_buf2: [u8; 4]= Default::default();
-    match sig {
-        FileSignature::Encrypt => {
-            // read in both sizes
-            file.read_exact_at(&mut size_buf1, 2)?;
-            file.read_exact_at(&mut size_buf2, 6)?;
 
-            let e_size: u32 = u32::from_le_bytes(size_buf1);
-            let mut e_buf: Vec<u8> = vec![0u8; e_size.try_into()?];
-            file.read_exact_at(&mut e_buf, 10)?;
-            let e: BigUint = BigUint::from_le_bytes(&e_buf);
-            println!("read e: {:?}", e);
+    file.read_exact_at(&mut size_buf1, 2)?;
+    file.read_exact_at(&mut size_buf2, 6)?;
 
-            let n_size: u32 = u32::from_le_bytes(size_buf2);
-            let mut n_buf: Vec<u8> = vec![0u8; n_size.try_into()?];
-            file.read_exact_at(&mut n_buf, (9 + e_size).try_into()?)?;
-            let n: BigUint = BigUint::from_bytes_le(&n_buf);
-            println!("read n: {:?}", n)
-        },
-        FileSignature::Decrypt => {
-            file.read_exact_at(&mut size_buf1, 2)?;
-            file.read_exact_at(&mut size_buf2, 6)?;
-        },
-        FileSignature::Bin => {
+    let size1: u32 = u32::from_le_bytes(size_buf1);
+    let mut buf1: Vec<u8> = vec![0u8; size1.try_into()?];
+    file.read_exact_at(&mut buf1, 10)?;
+    let key1: BigUint = BigUint::from_le_bytes(&buf1);
 
-        }
-    }
+    let size2: u32 = u32::from_le_bytes(size_buf2);
+    let mut buf2: Vec<u8> = vec![0u8; size2.try_into()?];
+    file.read_exact_at(&mut buf2, (9 + size1).try_into()?)?;
+    let key2: BigUint = BigUint::from_bytes_le(&buf2);
 
-    Ok(ReadBuf::Bin)
+    Ok((key1, key2))
 }
