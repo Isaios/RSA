@@ -5,6 +5,17 @@ use num_traits::{One, Zero};
 use std::sync::mpsc;
 use std::thread;
 
+/// Implementation of the miller-rabin primality test, returns true if the number should be prime
+///
+/// # Arguments
+/// * `n` - number to test
+/// * `k` - number of random numbers n should be tested against
+///
+/// # Examples
+/// ```
+/// let num: BigUint = 65537.to_biguint().unwrap();
+/// assert_eq![rmt(n: num, k: 500), true];
+/// ```
 pub fn rmt(n: &BigUint, k: usize) -> bool {
     let mut rng = rand::thread_rng();
 

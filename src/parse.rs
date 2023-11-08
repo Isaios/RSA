@@ -2,20 +2,9 @@ use clap::{Args, Parser, Subcommand};
 use num_bigint::BigUint;
 use std::fs::File;
 
-//  rsa -> generate -> <key_length> <oFile?> /
-//      |
-//      |
-//      |-> encrypt -> <iFile | input> <Keys <e> <n> | pubKeyFile> <oFile?> /
-//      |
-//      |
-//      |-> decrypt -> <iFile | input> <Keys <d> <n> | privKeyFile> <oFile?>
-//      |
-//      |
-//      |-> primes
-
 use crate::files::*;
 use crate::primagen::*;
-use crate::rsa::{create_keys, rsa_decrypt, rsa_encrypt};
+use crate::rsa::*;
 
 #[derive(Parser)]
 pub struct Arguments {
@@ -23,6 +12,7 @@ pub struct Arguments {
     sub_command: SubCommand,
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Subcommand)]
 enum SubCommand {
     Generate {
@@ -113,7 +103,6 @@ struct DecKeyArgs {
 
 pub fn parse() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arguments::parse();
-
     match args.sub_command {
         SubCommand::Generate {
             key_length,
@@ -122,7 +111,6 @@ pub fn parse() -> Result<(), Box<dyn std::error::Error>> {
         } => {
             // generate the keys using the length
             let (e, n, d) = create_keys(generate_primes(key_length.into(), 500));
-
             if public.is_some() && private.is_some() {
                 // write generated keys to public and private key files
                 match read_bufsig(public.clone().expect(""))? {
@@ -274,7 +262,6 @@ pub fn parse() -> Result<(), Box<dyn std::error::Error>> {
             };
             let mut key_file = File::create(file)?;
             write_buf(&mut key_file, FileBuf::Decrypt { n, d })?;
-
         },
         SubCommand::Read { file } => {
             let read_buf = read_buf(file)?;
@@ -333,7 +320,7 @@ fn get_enc_keys(
     };
 }
 
-/// function that extracts the n and d value from the DecKeyArgs
+/// Function that extracts the n and d value from the DecKeyArgs
 /// panics when one or both are missing
 ///
 /// # Example

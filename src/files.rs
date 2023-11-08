@@ -2,6 +2,7 @@ use std::{fs::File, io::{Write, Read}, os::unix::prelude::FileExt, vec};
 use num_bigint::BigUint;
 use num_traits::FromBytes;
 
+/// Holds the signature of a file. Contains None if the file cannot be read
 pub enum FileSignature {
     Encrypt,
     Decrypt,
@@ -9,18 +10,20 @@ pub enum FileSignature {
     None,
 }
 
-// file format: 
-// first two bytes evaluate to the ascii values either representing e and n or n and d, indicating
-// what file type is beeing read. After that the lengths in bytes of the two values follows, so
-// that they can be read in properly
-//
+// Base Format: 
 //   0   1   2   3   4   5   6   7   8   9
 // |___|___|___|___|___|___|___|___|___|___|___->
 //  id1 id2 <-----len1----> <----len2-----> bytes
+// 
+// id1 and id2 determine wether the stored bytes correspond to the public or private key
+// len1 and len2 contain the lengths of the stored values
+// after that both values follow
+
+/// Determines the signature of the file buffer and returns a FileSignature enum
 pub fn read_bufsig(path: std::path::PathBuf) -> Result<FileSignature, Box<dyn std::error::Error>>{
     let ref mut file = match File::open(path) {
         Ok(file) => file,
-        Err(e) => {
+        Err(_e) => {
             return Ok(FileSignature::None);
         },
     };
@@ -50,11 +53,8 @@ pub enum FileBuf {
     },
 }
 
-pub enum ReadMode {
-    Normal,
-    Binary,
-}
-
+/// Read a file from the given path and return a FileBuf with the corresponding type and values.
+/// Returns an error if file operations fail
 pub fn read_buf(path: std::path::PathBuf) -> Result<FileBuf, Box<dyn std::error::Error>> {
     let sig: FileSignature = read_bufsig(path.clone())?;
     match sig {
@@ -83,6 +83,7 @@ pub fn read_buf(path: std::path::PathBuf) -> Result<FileBuf, Box<dyn std::error:
     }
 }
 
+/// Read a file as one binary block and ignore signatures. Returns the file content as a BigUint
 pub fn read_bin_buf(path: std::path::PathBuf) -> Result<BigUint, Box<dyn std::error::Error>> {
     let sig: FileSignature = read_bufsig(path.clone())?; 
     match sig {
@@ -99,6 +100,7 @@ pub fn read_bin_buf(path: std::path::PathBuf) -> Result<BigUint, Box<dyn std::er
     }
 }
 
+/// Read the keys from a file that previously was determined to be a valid key file
 fn read_keys(file: &mut std::fs::File) -> Result<(BigUint, BigUint), Box<dyn std::error::Error>> {
     let mut size_buf1: [u8; 4]= Default::default();
     let mut size_buf2: [u8; 4]= Default::default();
@@ -119,6 +121,7 @@ fn read_keys(file: &mut std::fs::File) -> Result<(BigUint, BigUint), Box<dyn std
     Ok((key1, key2))
 }
 
+/// Write a FileBuf to the path using the corresponding formatting
 pub fn write_buf(file: &mut std::fs::File, file_buf: FileBuf) -> Result<(), Box<dyn std::error::Error>> {
     match file_buf {
         FileBuf::Encrypt { e, n } => {
@@ -145,6 +148,7 @@ pub fn write_buf(file: &mut std::fs::File, file_buf: FileBuf) -> Result<(), Box<
     }
 }
 
+/// Write the BigUint as one chunk to a file
 pub fn write_bin_buf(num: BigUint, path: std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let mut buf = num.to_bytes_le();
     let mut file = File::create(path)?;
@@ -152,6 +156,13 @@ pub fn write_bin_buf(num: BigUint, path: std::path::PathBuf) -> Result<(), Box<d
     Ok(())
 }
 
+/// Write the both keys to a file using the id_buf as a format identifier
+///
+/// # Arguments
+/// * `file` - path to file
+/// * `id_buf` - buffer holding the format information
+/// * `buf1` - first key
+/// * `buf2` - second key
 fn write_keys(file: &mut std::fs::File, id_buf: &mut Vec<u8>, buf1: &mut Vec<u8>, buf2: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer: Vec<u8> = vec![];
     buffer.append(id_buf);
