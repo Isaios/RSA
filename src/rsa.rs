@@ -5,8 +5,8 @@ use num_bigint::{BigInt, ToBigUint, BigUint};
 use num_traits::{One, Zero};
 
 // c = single u128 to encrypt
-pub fn rsa_encrypt(c: &BigUint , d: &BigUint, n: &BigUint) -> BigUint {
-    c.modpow(&d.to_biguint().unwrap(), n)
+pub fn rsa_encrypt(z: &BigUint , e: &BigUint, n: &BigUint) -> BigUint {
+    z.modpow(e, n)
 }
 //c = single u128 to decrypt
 pub fn rsa_decrypt(c: &BigUint, d: &BigUint, n: &BigUint) -> BigUint {
